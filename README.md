@@ -16,6 +16,7 @@ ansible/
 ```
 
 —— **Example .ini and .yaml file in host_vars**
+
 ———**1. .ini file**
 ```ini
 # ./ansible/inventory.ini
