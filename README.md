@@ -1,4 +1,4 @@
-# STEP I
+# STEP I: Ansible
 1. **Create the inventory file**
 &emsp; First of all, we need to create an inventory.ini (where all names of groups and servers belonging to those groups will be defined).
 2. **Create the host_vars and .yaml files**
@@ -48,3 +48,90 @@ ansible-playbook -i inventory.ini setup_host.yaml
 &emsp; Next, we need to check idempotency. If we run the playbook a second time, it will not change anything on the server. You can see the result on the screenshot below.
 
 ![Ansible Idempotency Check](images/ansible.png)
+
+---
+
+## STEP II: Terraform
+
+**1. Create the Terraform directory**
+
+&emsp; First of all, we need to create a separate folder for our Terraform project (for example, `terraform/`).
+
+**2. Create the main.tf file**
+
+&emsp; Then we need to create a `main.tf` file in this folder. In this file, we configure the Docker provider, download the Nginx image, and create a custom network, a volume, and the container itself (running on a non-standard port 6767).
+
+---
+
+### Examples:
+—— **How the directory structure looks right now**
+
+```text
+terraform/
+└── main.tf
+```
+
+—— Example main.tf file
+
+```tf
+# ./terraform/main.tf
+terraform {
+  required_providers {
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = "~> 3.0.0"
+    }
+  }
+}
+provider "docker" {
+  host = "unix:///var/run/docker.sock"
+}
+resource "docker_image" "nginx" {
+  name         = "nginx:latest"
+  keep_locally = false
+}
+resource "docker_network" "custom_nginx_network" {
+  name = "nginx_net"
+}
+resource "docker_volume" "nginx_data" {
+  name = "nginx_volume"
+}
+resource "docker_container" "nginx_web" {
+  name  = "nginx_terraform"
+  image = docker_image.nginx.image_id
+
+  networks_advanced {
+    name = docker_network.custom_nginx_network.name
+  }
+
+  volumes {
+    volume_name    = docker_volume.nginx_data.name
+    container_path = "/usr/share/nginx/html"
+  }
+
+  ports {
+    internal = 80
+    external = 6767
+  }
+}
+```
+
+**3. How to run**
+
+&emsp; To deploy the container and all resources, run the following commands from the `terraform/` directory one by one:
+
+```bash
+terraform init
+terraform plan
+terraform apply -auto-approve
+```
+
+**4. Verification Check**
+
+&emsp; Next, we need to check if everything works correctly. First, we use the `terraform state list` command to see all created objects. Then, we check if Nginx answers on our custom port using `curl -i http://localhost:6767`. You can see both results on the screenshots below.
+
+**Terraform State:**  
+![Terraform State List](images/terraform_state_list.png)
+
+**Nginx HTTP Response:**  
+![Nginx Curl Result](images/curl.png)
