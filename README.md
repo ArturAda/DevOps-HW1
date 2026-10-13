@@ -32,4 +32,17 @@ ansible_user: agent
 ansible_ssh_private_key_file: /blood/money/contract
 ```
 
+**3. Create the Ansible Playbook**
 
+&emsp; We created a `setup_host.yaml` playbook that connects to the servers, creates a non-root `deployer` user with passwordless sudo access, and installs Docker along with the Docker Compose plugin.
+
+**4. How to run**
+&emsp; To prepare the server, run the following command from the `ansible/` directory:
+```bash
+ansible-playbook -i inventory.ini setup_host.yaml
+```
+
+**5. Idempotency Check**
+&emsp; Next, we need to check idempotency. If we run the playbook a second time, it will not change anything on the server. You can see the result on the screenshot below.
+
+![Ansible Idempotency Check](images/ansible.png)
