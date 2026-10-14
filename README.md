@@ -36,6 +36,80 @@ ansible_ssh_private_key_file: /blood/money/contract
 
 &emsp; We created a `setup_host.yaml` playbook that connects to the servers, creates a non-root `deployer` user with passwordless sudo access, and installs Docker along with the Docker Compose plugin.
 
+—— Example setup_host.yaml file
+
+```yaml
+---
+- name: Host Configuration
+  hosts: web_servers
+  become: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+  tasks:
+    - name: Create deployer user
+      user:
+        name: deployer
+        state: present
+        shell: /bin/bash
+        create_home: yes
+    - name: Deployer has sudo?
+      lineinfile:
+        dest: /etc/sudoers
+        regexp: '^deployer'
+        line: 'deployer ALL=(ALL) NOPASSWD: ALL'
+---
+- name: Host Configuration
+  hosts: web_servers
+  become: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+  tasks:
+    - name: Create deployer user
+      user:
+        name: deployer
+        state: present
+        shell: /bin/bash
+        create_home: yes
+    - name: Deployer has sudo?
+      lineinfile:
+        dest: /etc/sudoers
+        regexp: '^deployer'
+        line: 'deployer ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
+    - name: Update apt and install all Docker dependencies
+      apt:
+        name:
+          - curl
+          - ca-certificates
+          - software-properties-common
+          - apt-transport-https
+        state: present
+        update_cache: yes
+    - name: Create directory for Docker GPG key
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+    - name: Download Docker GPG key
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+    - name: Docker installation path
+      deb822_repository:
+        name: docker
+        types: [deb]
+        architectures: [amd64]
+        uris: "https://download.docker.com/linux/ubuntu"
+        suites: ["{{ ansible_facts['distribution_release'] }}"]
+        components: [stable]
+        signed_by: /etc/apt/keyrings/docker.asc
+        state: present
+    - name: Install Docker Engine and Docker Compose
+```
+
 **4. How to run**
 
 &emsp; To prepare the server, run the following command from the `ansible/` directory:
