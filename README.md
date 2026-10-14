@@ -136,4 +136,7 @@ terraform apply -auto-approve
 **Nginx HTTP Response:**  
 ![Nginx Curl Result](images/curl.png)
 
+---
+
 ## STEP III: Bash Monitoring Script
+
