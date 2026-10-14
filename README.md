@@ -140,3 +140,75 @@ terraform apply -auto-approve
 
 ## STEP III: Bash Monitoring Script
 
+**1. Create the script file**
+
+&emsp; First of all, we need to create a `monitor.sh` file on our VM.
+
+**2. Write the monitoring logic**
+
+&emsp; In this file, we write a Bash script that takes a service name as an argument. It checks if the service is active using `systemctl`. If the service is not running, the script shows the last 10 lines of its logs using `journalctl`. After that, it counts the number of errors in `/var/log/syslog` for the last hour using `grep` and `awk`.
+
+---
+
+### Examples:
+—— **How the directory structure looks right now**
+
+```text
+scripts/
+└── monitor.sh
+```
+
+—— **Example monitor.sh file**
+
+```bash
+#!/bin/bash
+
+if [ -z "$1" ]; then
+    echo "Usage: ./monitor.sh <service_name>"
+    exit
+fi
+
+SERVICE=$1
+
+echo "Checking $SERVICE"
+
+STATE=$(systemctl is-active "$SERVICE")
+
+if [ "$STATE" = "active" ]; then
+    echo "Service $SERVICE is running"
+else
+    echo "Service $SERVICE isn't running"
+    echo "The last 10 lines of the log for $SERVICE"
+    journalctl -u "$SERVICE" -n 10 --no-pager
+fi
+
+echo "Checking the number of errors"
+
+if [ -f /var/log/syslog ]; then
+    TIME_HOUR_AGO=$(date -d "-1 hour" '+%Y-%m-%dT%H:%M:%S')
+    ERRORS=$(grep -i "error" /var/log/syslog | awk -v iso="$TIME_HOUR_AGO" '$1 >= iso {count++} END {print count+0}')
+    echo "Found $ERRORS error(s) in /var/log/syslog in the last hour"
+else
+    echo "Couldn't find file /var/log/syslog"
+fi
+```
+
+**3. How to run**
+
+&emsp; First, we need to make the script executable, and then we can run it by passing any service name as an argument:
+
+```bash
+chmod +x monitor.sh
+./monitor.sh docker
+./monitor.sh agent_p
+```
+
+**4. Verification Check**
+
+&emsp; Next, we need to check if our script works correctly in both situations. First, we test it with a running service (`docker`), and then we test it with a non-existing service (`agent_p`) to see the log output. You can see both results on the screenshots below.
+
+**Active Service Check (docker):**
+![Docker Active Check](images/docker_active.png)
+
+**Inactive Service Check (agent_p):**  
+![Agent P Inactive Check](images/agent_p_active.png)
