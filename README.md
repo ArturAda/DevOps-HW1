@@ -43,27 +43,8 @@ ansible_ssh_private_key_file: /blood/money/contract
 - name: Host Configuration
   hosts: web_servers
   become: yes
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
-
-  tasks:
-    - name: Create deployer user
-      user:
-        name: deployer
-        state: present
-        shell: /bin/bash
-        create_home: yes
-    - name: Deployer has sudo?
-      lineinfile:
-        dest: /etc/sudoers
-        regexp: '^deployer'
-        line: 'deployer ALL=(ALL) NOPASSWD: ALL'
----
-- name: Host Configuration
-  hosts: web_servers
-  become: yes
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
+  vars: 
+    ansible_python_interpreter: /usr/bin/python3  
 
   tasks:
     - name: Create deployer user
@@ -108,6 +89,24 @@ ansible_ssh_private_key_file: /blood/money/contract
         signed_by: /etc/apt/keyrings/docker.asc
         state: present
     - name: Install Docker Engine and Docker Compose
+      apt:
+        name: 
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
+    - name: Add deployer to docker group
+      user:
+        name: deployer
+        groups: docker
+        append: yes
+    - name: Docker autostart
+      service:
+        name: docker
+        state: started
+        enabled: yes
 ```
 
 **4. How to run**
