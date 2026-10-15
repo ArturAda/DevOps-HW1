@@ -1,7 +1,10 @@
 # STEP I: Ansible
 1. **Create the inventory file**
+
 &emsp; First of all, we need to create an inventory.ini (where all names of groups and servers belonging to those groups will be defined).
+
 2. **Create the host_vars and .yaml files**
+
 &emsp; Then we need to create a folder host_vars (and if you want, you can create another folder group_vars). In this folder you create files with .yaml extension, using the server names you specified in the .ini file.
 
 ---
@@ -285,3 +288,106 @@ chmod +x monitor.sh
 
 **Inactive Service Check (agent_p):**  
 ![Agent P Inactive Check](images/agent_p_active.png)
+
+---
+
+## STEP IV: Docker Compose Environment
+
+**1. Create the application directory and config files**
+
+&emsp; First of all, we need to create the `/opt/app` folder on our VM. Inside this folder, we create an `html/index.html` file with our custom text for the backend container, and a `rev_proxy.conf` file to configure Nginx as a reverse proxy.
+
+**2. Create the docker-compose.yml file**
+
+&emsp; Then we create a `docker-compose.yml` file with two services (`app` and `nginx`) connected to a custom bridge network (`compose_net`). Only the `nginx` reverse proxy exposes port `80` to the host, while the `app` backend service stays isolated inside the internal Docker network.
+
+---
+
+### Examples:
+—— **How the directory structure looks right now**
+
+```text
+/opt/app/
+├── docker-compose.yml
+├── rev_proxy.conf
+└── html/
+  └── index.html
+```
+
+—— **Example configuration files**
+
+——— **1. html/index.html**
+
+```html
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chill</title>
+</head>
+<body>
+        <h1>Hello, world!</h1>
+</body>
+</html>
+
+```
+
+——— **2. rev_proxy.conf**
+
+```nginx
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://app:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+——— **3. docker-compose.yml**
+
+```yaml
+services:
+  app:
+    image: nginx:alpine
+    container_name: app_backend
+    volumes:
+      - ./html/index.html:/usr/share/nginx/html/index.html:ro
+    networks:
+      - compose_net
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./rev_proxy.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    networks:
+      - compose_net
+
+networks:
+  compose_net:
+    driver: bridge
+```
+
+**3. How to run**
+
+&emsp; To start the environment in the background, run the following command from the `/opt/app` directory:
+
+```bash
+docker compose up -d
+```
+
+**4. Verification Check**
+
+&emsp; Next, we need to check if both containers are running and if the reverse proxy successfully forwards requests to the backend app. First, we run `docker compose ps` to check the status. Then, we run `curl http://localhost` to see our "Hello, world!" response. You can see both results on the screenshots below.
+
+**Docker Compose Status:**
+![Docker Compose PS](images/docker_ps.png)
+
+**Reverse Proxy Curl Response:**  
+![Docker Compose Curl](images/curl_80.png)
