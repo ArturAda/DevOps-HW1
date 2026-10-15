@@ -1,3 +1,31 @@
+# STEP 0: Setup
+
+**1. Local Requirements**
+
+&emsp; To run the Ansible playbook, we need to install **Ansible** and **Git** on our local machine. The installation process depends on your operating system:
+
+* **macOS:** You can easily install them using Homebrew:
+  ```bash
+  brew install ansible git
+  ```
+* **Linux (Ubuntu/Debian):** Use the standard `apt` package manager:
+  ```bash
+  sudo apt update
+  sudo apt install ansible git -y
+  ```
+* **Windows:** It is highly recommended to install WSL.
+
+**2. Clone the repository**
+
+&emsp; Run the following commands:
+
+```bash
+git clone https://github.com/ArturAda/DevOps-HW1.git
+cd DevOps-HW1
+```
+
+---
+
 # STEP I: Ansible
 1. **Create the inventory file**
 
