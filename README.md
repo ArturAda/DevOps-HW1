@@ -391,3 +391,19 @@ docker compose up -d
 
 **Reverse Proxy Curl Response:**  
 ![Docker Compose Curl](images/curl_80.png)
+
+---
+
+## STEP V: Parameters and Problems
+
+**1. Parameters**
+
+* **Network isolation:** We created two separate Docker networks. In Docker Compose, the backend `app` container doesn't have the `ports` directive at all, so it is completely hidden from the outside world for security reasons.
+
+* **Port separation (`6767` vs `80`):** In Terraform, we used a non-standard port `6767` for the standalone Nginx container. Because of this, the standard HTTP port `80` stayed free for our Reverse Proxy in the Docker Compose task.
+
+**2. Problems**
+
+* **Address already in use (Port 80):** When I tried to run Docker Compose, I got a `failed to bind host port 0.0.0.0:80` error. I used the `ss -tulpn | grep :80` command and found out that a default system Nginx was running on the VM. I solved this by running `systemctl stop nginx` and `systemctl disable nginx`.
+
+* **Terraform provider download error:** Running `terraform init` failed because `registry.terraform.io` blocked connections. I solved this problem by creating a `~/.terraformrc` configuration file and setting up a network mirror from Yandex Cloud (`https://terraform-mirror.yandexcloud.net/`).
